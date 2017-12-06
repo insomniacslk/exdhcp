@@ -12,9 +12,9 @@ Usage of ./packetparser:
   -etherip
         Enables LayerTypeEtherIP instead of LayerTypeEthernet, use with linux-cooked PCAP files. (default: false)
   -i string
-        Network interface to send packets through (default: eth0) (default "eth0")
+        Network interface to send packets through (default "eth0")
   -r string
         PCAP file to read from. If not specified, try to send an actual DHCP request
   -v int
-        IP version to use (default: 6) (default 6)
+        IP version to use (default 6)
 ```

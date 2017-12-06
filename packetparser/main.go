@@ -13,9 +13,9 @@ import (
 	"net"
 )
 
-var ver = flag.Int("v", 6, "IP version to use (default: 6)")
+var ver = flag.Int("v", 6, "IP version to use")
 var infile = flag.String("r", "", "PCAP file to read from. If not specified, try to send an actual DHCP request")
-var iface = flag.String("i", "eth0", "Network interface to send packets through (default: eth0)")
+var iface = flag.String("i", "eth0", "Network interface to send packets through")
 var useEtherIP = flag.Bool("etherip", false, "Enables LayerTypeEtherIP instead of LayerTypeEthernet, use with linux-cooked PCAP files. (default: false)")
 var debug = flag.Bool("debug", false, "Enable debug output (default: false)")
 
