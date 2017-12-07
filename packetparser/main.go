@@ -19,6 +19,7 @@ var iface = flag.String("i", "eth0", "Network interface to send packets through"
 var useEtherIP = flag.Bool("etherip", false, "Enables LayerTypeEtherIP instead of LayerTypeEthernet, use with linux-cooked PCAP files. (default: false)")
 var debug = flag.Bool("debug", false, "Enable debug output (default: false)")
 var live = flag.Bool("live", false, "Sniff DHCP packets from the network (default: false)")
+var snaplen = flag.Int("s", 0, "Set the snaplen when using -live")
 
 func Clientv4() {
 	client := dhcpv4.Client{}
@@ -77,7 +78,14 @@ func main() {
 			err    error
 		)
 		if *live {
-			handle, err = pcap.OpenLive(*iface, 0, false, 0)
+			var slen int32
+			slen = int32(*snaplen)
+			if slen == 0 {
+				// some libpcap versions don't support 0 as 'no snap len limit'.
+				// Setting it to 262144 as per tcpdump's manual page
+				slen = 262144
+			}
+			handle, err = pcap.OpenLive(*iface, slen, false /* promisc */, 0 /* timeout */)
 		} else {
 			handle, err = pcap.OpenOffline(*infile)
 		}
