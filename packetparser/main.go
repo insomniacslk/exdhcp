@@ -19,7 +19,8 @@ var iface = flag.String("i", "eth0", "Network interface to send packets through"
 var useEtherIP = flag.Bool("etherip", false, "Enables LayerTypeEtherIP instead of LayerTypeEthernet, use with linux-cooked PCAP files. (default: false)")
 var debug = flag.Bool("debug", false, "Enable debug output (default: false)")
 var live = flag.Bool("live", false, "Sniff DHCP packets from the network (default: false)")
-var snaplen = flag.Int("s", 0, "Set the snaplen when using -live")
+var snaplen = flag.Int("s", 0, "Set the snaplen when using -live (default: 0)")
+var count = flag.Int("c", 0, "Stop after <count> packets (default: 0)")
 
 func Clientv4() {
 	client := dhcpv4.Client{}
@@ -77,7 +78,13 @@ func main() {
 			handle *pcap.Handle
 			err    error
 		)
+		if *count < 0 {
+			panic("count cannot be negative")
+		}
 		if *live {
+			if *snaplen < 0 {
+				panic("snaplen cannot be negative")
+			}
 			var slen int32
 			slen = int32(*snaplen)
 			if slen == 0 {
@@ -109,7 +116,12 @@ func main() {
 		} else {
 			layerType = layers.LayerTypeEthernet
 		}
+		packetCount := 0
 		for {
+			packetCount++
+			if *count != 0 && packetCount > *count {
+				break
+			}
 			data, _, err := handle.ReadPacketData()
 			if err != nil {
 				if err == io.EOF {
