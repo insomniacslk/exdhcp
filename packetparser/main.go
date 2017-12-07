@@ -22,7 +22,7 @@ var live = flag.Bool("live", false, "Sniff DHCP packets from the network (defaul
 
 func Clientv4() {
 	client := dhcpv4.Client{}
-	conv, err := client.Exchange(nil, *iface)
+	conv, err := client.Exchange(*iface, nil)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
 	for _, m := range conv {
