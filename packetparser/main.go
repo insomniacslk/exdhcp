@@ -18,10 +18,11 @@ var infile = flag.String("r", "", "PCAP file to read from. If not specified, try
 var iface = flag.String("i", "eth0", "Network interface to send packets through")
 var useEtherIP = flag.Bool("etherip", false, "Enables LayerTypeEtherIP instead of LayerTypeEthernet, use with linux-cooked PCAP files. (default: false)")
 var debug = flag.Bool("debug", false, "Enable debug output (default: false)")
+var live = flag.Bool("live", false, "Sniff DHCP packets from the network (default: false)")
 
 func Clientv4() {
 	client := dhcpv4.Client{}
-	conv, err := client.Exchange(nil, "wlp58s0")
+	conv, err := client.Exchange(nil, *iface)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
 	for _, m := range conv {
@@ -51,7 +52,7 @@ func Clientv6() {
 		LocalAddr:  &laddr,
 		RemoteAddr: &raddr,
 	}
-	conv, err := c.Exchange("wlp58s0", nil)
+	conv, err := c.Exchange(*iface, nil)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
 	for _, m := range conv {
@@ -64,14 +65,22 @@ func Clientv6() {
 
 func main() {
 	flag.Parse()
-	if *infile == "" {
+	if *infile == "" && !*live {
 		if *ver == 4 {
 			Clientv4()
 		} else {
 			Clientv6()
 		}
 	} else {
-		handle, err := pcap.OpenOffline(*infile)
+		var (
+			handle *pcap.Handle
+			err    error
+		)
+		if *live {
+			handle, err = pcap.OpenLive(*iface, 0, false, 0)
+		} else {
+			handle, err = pcap.OpenOffline(*infile)
+		}
 		if err != nil {
 			panic(err)
 		}
