@@ -92,7 +92,7 @@ func main() {
 				// Setting it to 262144 as per tcpdump's manual page
 				slen = 262144
 			}
-			handle, err = pcap.OpenLive(*iface, slen, false /* promisc */, 0 /* timeout */)
+			handle, err = pcap.OpenLive(*iface, slen, false /* promisc */, -1 /* timeout */)
 		} else {
 			handle, err = pcap.OpenOffline(*infile)
 		}
