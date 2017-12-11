@@ -21,6 +21,7 @@ var debug = flag.Bool("debug", false, "Enable debug output (default: false)")
 var live = flag.Bool("live", false, "Sniff DHCP packets from the network (default: false)")
 var snaplen = flag.Int("s", 0, "Set the snaplen when using -live (default: 0)")
 var count = flag.Int("c", 0, "Stop after <count> packets (default: 0)")
+var unpack = flag.Bool("unpack", false, "Unpack inner DHCPv6 messages when parsing relay messages")
 
 func Clientv4() {
 	client := dhcpv4.Client{}
@@ -145,11 +146,22 @@ func main() {
 					}
 					fmt.Println(d.Summary())
 				} else {
+					var packet dhcpv6.DHCPv6
 					d, err := dhcpv6.FromBytes(udp.Payload)
 					if err != nil {
 						panic(err)
 					}
-					fmt.Println(d.Summary())
+					packet = d
+					if *unpack {
+						if d.IsRelay() {
+							inner, err := d.(*dhcpv6.DHCPv6Relay).GetInnerMessage()
+							if err != nil {
+								panic(err)
+							}
+							packet = inner
+						}
+					}
+					fmt.Println(packet.Summary())
 				}
 			}
 		}
