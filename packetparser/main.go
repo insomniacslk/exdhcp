@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 )
 
 var ver = flag.Int("v", 6, "IP version to use")
@@ -22,6 +23,7 @@ var live = flag.Bool("live", false, "Sniff DHCP packets from the network (defaul
 var snaplen = flag.Int("s", 0, "Set the snaplen when using -live (default: 0)")
 var count = flag.Int("c", 0, "Stop after <count> packets (default: 0)")
 var unpack = flag.Bool("unpack", false, "Unpack inner DHCPv6 messages when parsing relay messages")
+var to = flag.String("to", "", "Destination to send packets to. If empty, will use [ff02::1:2]:547")
 
 func Clientv4() {
 	client := dhcpv4.Client{}
@@ -37,19 +39,43 @@ func Clientv4() {
 }
 
 func Clientv6() {
-	llAddr, err := dhcpv6.GetLinkLocalAddr(*iface)
-	if err != nil {
-		panic(err)
-	}
-	laddr := net.UDPAddr{
-		IP:   *llAddr,
-		Port: 546,
-		Zone: *iface,
-	}
-	raddr := net.UDPAddr{
-		IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
-		Port: 547,
-		Zone: *iface,
+	var (
+		laddr, raddr net.UDPAddr
+	)
+	if *to == "" {
+		llAddr, err := dhcpv6.GetLinkLocalAddr(*iface)
+		if err != nil {
+			log.Fatal(err)
+		}
+		laddr = net.UDPAddr{
+			IP:   *llAddr,
+			Port: 546,
+			Zone: *iface,
+		}
+		raddr = net.UDPAddr{
+			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
+			Port: 547,
+			Zone: *iface,
+		}
+	} else {
+		laddr = net.UDPAddr{
+			IP:   net.ParseIP("::"),
+			Port: 546,
+			Zone: *iface,
+		}
+		dstHost, dstPort, err := net.SplitHostPort(*to)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dstPortInt, err := strconv.Atoi(dstPort)
+		if err != nil {
+			log.Fatal(err)
+		}
+		raddr = net.UDPAddr{
+			IP:   net.ParseIP(dstHost),
+			Port: dstPortInt,
+			Zone: *iface, // this may clash with the scope passed in the dstHost, if any
+		}
 	}
 	c := dhcpv6.Client{
 		LocalAddr:  &laddr,
@@ -80,11 +106,11 @@ func main() {
 			err    error
 		)
 		if *count < 0 {
-			panic("count cannot be negative")
+			log.Fatal("count cannot be negative")
 		}
 		if *live {
 			if *snaplen < 0 {
-				panic("snaplen cannot be negative")
+				log.Fatal("snaplen cannot be negative")
 			}
 			var slen int32
 			slen = int32(*snaplen)
@@ -98,7 +124,7 @@ func main() {
 			handle, err = pcap.OpenOffline(*infile)
 		}
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		defer handle.Close()
 		var pcapFilter string
@@ -109,7 +135,7 @@ func main() {
 		}
 		err = handle.SetBPFFilter(pcapFilter)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		var layerType gopacket.LayerType
 		if *useEtherIP {
@@ -128,7 +154,7 @@ func main() {
 				if err == io.EOF {
 					break
 				}
-				panic(err)
+				log.Fatal(err)
 			}
 			pkt := gopacket.NewPacket(data, layerType, gopacket.Default)
 			if *debug {
@@ -142,21 +168,21 @@ func main() {
 				if *ver == 4 {
 					d, err := dhcpv4.FromBytes(udp.Payload)
 					if err != nil {
-						panic(err)
+						log.Fatal(err)
 					}
 					fmt.Println(d.Summary())
 				} else {
 					var packet dhcpv6.DHCPv6
 					d, err := dhcpv6.FromBytes(udp.Payload)
 					if err != nil {
-						panic(err)
+						log.Fatal(err)
 					}
 					packet = d
 					if *unpack {
 						if d.IsRelay() {
 							inner, err := d.(*dhcpv6.DHCPv6Relay).GetInnerMessage()
 							if err != nil {
-								panic(err)
+								log.Fatal(err)
 							}
 							packet = inner
 						}
