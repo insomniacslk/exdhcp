@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"strconv"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/insomniacslk/dhcp/dhcpv4"
 	"github.com/insomniacslk/dhcp/dhcpv6"
-	"io"
-	"log"
-	"net"
-	"strconv"
 )
 
 var ver = flag.Int("v", 6, "IP version to use")
@@ -26,7 +27,7 @@ var unpack = flag.Bool("unpack", false, "Unpack inner DHCPv6 messages when parsi
 var to = flag.String("to", "", "Destination to send packets to. If empty, will use [ff02::1:2]:547")
 
 func Clientv4() {
-	client := dhcpv4.Client{}
+	client := dhcpv4.NewClient()
 	conv, err := client.Exchange(*iface, nil)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
