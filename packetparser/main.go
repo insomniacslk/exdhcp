@@ -43,27 +43,22 @@ func Clientv6() {
 	var (
 		laddr, raddr net.UDPAddr
 	)
+	llAddr, err := dhcpv6.GetLinkLocalAddr(*iface)
+	if err != nil {
+		log.Fatal(err)
+	}
+	laddr = net.UDPAddr{
+		IP:   *llAddr,
+		Port: 546,
+		Zone: *iface,
+	}
 	if *to == "" {
-		llAddr, err := dhcpv6.GetLinkLocalAddr(*iface)
-		if err != nil {
-			log.Fatal(err)
-		}
-		laddr = net.UDPAddr{
-			IP:   *llAddr,
-			Port: 546,
-			Zone: *iface,
-		}
 		raddr = net.UDPAddr{
 			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
 			Port: 547,
 			Zone: *iface,
 		}
 	} else {
-		laddr = net.UDPAddr{
-			IP:   net.ParseIP("::"),
-			Port: 546,
-			Zone: *iface,
-		}
 		dstHost, dstPort, err := net.SplitHostPort(*to)
 		if err != nil {
 			log.Fatal(err)
@@ -78,10 +73,9 @@ func Clientv6() {
 			Zone: *iface, // this may clash with the scope passed in the dstHost, if any
 		}
 	}
-	c := dhcpv6.Client{
-		LocalAddr:  &laddr,
-		RemoteAddr: &raddr,
-	}
+	c := dhcpv6.NewClient()
+	c.LocalAddr = &laddr
+	c.RemoteAddr = &raddr
 	conv, err := c.Exchange(*iface, nil)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
