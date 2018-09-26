@@ -48,7 +48,7 @@ func Clientv6() {
 		log.Fatal(err)
 	}
 	laddr = net.UDPAddr{
-		IP:   *llAddr,
+		IP:   llAddr,
 		Port: 546,
 		Zone: *iface,
 	}
