@@ -49,13 +49,13 @@ func Clientv6() {
 	}
 	laddr = net.UDPAddr{
 		IP:   llAddr,
-		Port: 546,
+		Port: dhcpv6.DefaultClientPort,
 		Zone: *iface,
 	}
 	if *to == "" {
 		raddr = net.UDPAddr{
 			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
-			Port: 547,
+			Port: dhcp.DefaultServerPort,
 			Zone: *iface,
 		}
 	} else {
