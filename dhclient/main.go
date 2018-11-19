@@ -12,13 +12,17 @@ import (
 )
 
 var (
-	ver    = flag.Int("v", 6, "IP version to use")
-	ifname = flag.String("i", "eth0", "Interface name")
-	dryrun = flag.Bool("dryrun", false, "Do not change network configuration")
-	debug  = flag.Bool("d", false, "Print debug output")
+	ver     = flag.Int("v", 6, "IP version to use")
+	ifname  = flag.String("i", "eth0", "Interface name")
+	dryrun  = flag.Bool("dryrun", false, "Do not change network configuration")
+	debug   = flag.Bool("d", false, "Print debug output")
+	retries = flag.Int("r", 3, "Number of retries before giving up")
 )
 
-func dhclient6(ifname string, verbose bool) (*netboot.NetConf, error) {
+func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, error) {
+	if attempts < 1 {
+		attempts = 1
+	}
 	llAddr, err := dhcpv6.GetLinkLocalAddr(ifname)
 	if err != nil {
 		return nil, err
@@ -36,7 +40,15 @@ func dhclient6(ifname string, verbose bool) (*netboot.NetConf, error) {
 	c := dhcpv6.NewClient()
 	c.LocalAddr = &laddr
 	c.RemoteAddr = &raddr
-	conv, err := c.Exchange(ifname, nil)
+	var conv []dhcpv6.DHCPv6
+	for attempt := 0; attempt < attempts; attempt++ {
+		log.Printf("Attempt %d of %d", attempt+1, attempts)
+		conv, err = c.Exchange(ifname, nil)
+		if err != nil && attempt < attempts {
+			continue
+		}
+		break
+	}
 	if verbose {
 		for _, m := range conv {
 			log.Print(m.Summary())
@@ -50,9 +62,23 @@ func dhclient6(ifname string, verbose bool) (*netboot.NetConf, error) {
 	return netconf, err
 }
 
-func dhclient4(ifname string, verbose bool) (*netboot.NetConf, error) {
+func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, error) {
+	if attempts < 1 {
+		attempts = 1
+	}
 	client := dhcpv4.NewClient()
-	conv, err := client.Exchange(ifname, nil)
+	var (
+		conv []*dhcpv4.DHCPv4
+		err  error
+	)
+	for attempt := 0; attempt < attempts; attempt++ {
+		log.Printf("Attempt %d of %d", attempt+1, attempts)
+		conv, err = client.Exchange(ifname, nil)
+		if err != nil && attempt < attempts {
+			continue
+		}
+		break
+	}
 	if verbose {
 		for _, m := range conv {
 			log.Print(m.Summary())
@@ -79,9 +105,9 @@ func main() {
 		log.Fatal(err)
 	}
 	if *ver == 6 {
-		netconf, err = dhclient6(*ifname, *debug)
+		netconf, err = dhclient6(*ifname, *retries+1, *debug)
 	} else {
-		netconf, err = dhclient4(*ifname, *debug)
+		netconf, err = dhclient4(*ifname, *retries+1, *debug)
 	}
 	if err != nil {
 		log.Fatal(err)
