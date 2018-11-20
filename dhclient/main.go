@@ -45,6 +45,7 @@ func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		log.Printf("Attempt %d of %d", attempt+1, attempts)
 		conv, err = c.Exchange(ifname, nil)
 		if err != nil && attempt < attempts {
+			log.Printf("Error: %v", err)
 			continue
 		}
 		break
@@ -75,6 +76,7 @@ func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		log.Printf("Attempt %d of %d", attempt+1, attempts)
 		conv, err = client.Exchange(ifname, nil)
 		if err != nil && attempt < attempts {
+			log.Printf("Error: %v", err)
 			continue
 		}
 		break
