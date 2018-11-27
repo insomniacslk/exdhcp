@@ -43,7 +43,7 @@ func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 	var conv []dhcpv6.DHCPv6
 	for attempt := 0; attempt < attempts; attempt++ {
 		log.Printf("Attempt %d of %d", attempt+1, attempts)
-		conv, err = c.Exchange(ifname, nil)
+		conv, err = c.Exchange(ifname)
 		if err != nil && attempt < attempts {
 			log.Printf("Error: %v", err)
 			continue
@@ -74,7 +74,7 @@ func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 	)
 	for attempt := 0; attempt < attempts; attempt++ {
 		log.Printf("Attempt %d of %d", attempt+1, attempts)
-		conv, err = client.Exchange(ifname, nil)
+		conv, err = client.Exchange(ifname)
 		if err != nil && attempt < attempts {
 			log.Printf("Error: %v", err)
 			continue

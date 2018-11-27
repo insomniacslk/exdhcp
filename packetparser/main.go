@@ -28,7 +28,7 @@ var to = flag.String("to", "", "Destination to send packets to. If empty, will u
 
 func Clientv4() {
 	client := dhcpv4.NewClient()
-	conv, err := client.Exchange(*iface, nil)
+	conv, err := client.Exchange(*iface)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
 	for _, m := range conv {
@@ -76,7 +76,7 @@ func Clientv6() {
 	c := dhcpv6.NewClient()
 	c.LocalAddr = &laddr
 	c.RemoteAddr = &raddr
-	conv, err := c.Exchange(*iface, nil)
+	conv, err := c.Exchange(*iface)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
 	for _, m := range conv {
