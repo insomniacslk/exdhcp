@@ -115,10 +115,8 @@ func main() {
 		log.Fatal(err)
 	}
 	// configure the interface
-	if *debug {
-		log.Printf("Setting network configuration:")
-		log.Printf("%+v", netconf)
-	}
+	log.Printf("Setting network configuration:")
+	log.Printf("%+v", netconf)
 	if err := netboot.ConfigureInterface(*ifname, netconf); err != nil {
 		log.Fatal(err)
 	}

@@ -55,7 +55,7 @@ func Clientv6() {
 	if *to == "" {
 		raddr = net.UDPAddr{
 			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
-			Port: dhcp.DefaultServerPort,
+			Port: dhcpv6.DefaultServerPort,
 			Zone: *iface,
 		}
 	} else {
