@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/insomniacslk/dhcp/dhcpv4"
+	"github.com/insomniacslk/dhcp/dhcpv4/client4"
 	"github.com/insomniacslk/dhcp/dhcpv6"
+	"github.com/insomniacslk/dhcp/dhcpv6/client6"
 	"github.com/insomniacslk/dhcp/netboot"
 )
 
@@ -17,6 +19,7 @@ var (
 	dryrun  = flag.Bool("dryrun", false, "Do not change network configuration")
 	debug   = flag.Bool("d", false, "Print debug output")
 	retries = flag.Int("r", 3, "Number of retries before giving up")
+	noIfup  = flag.Bool("noifup", false, "If set, don't wait for the interface to be up")
 )
 
 func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, error) {
@@ -33,17 +36,17 @@ func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		Zone: ifname,
 	}
 	raddr := net.UDPAddr{
-		IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
+		IP:   client6.AllDHCPRelayAgentsAndServers,
 		Port: dhcpv6.DefaultServerPort,
 		Zone: ifname,
 	}
-	c := dhcpv6.NewClient()
+	c := client6.NewClient()
 	c.LocalAddr = &laddr
 	c.RemoteAddr = &raddr
 	var conv []dhcpv6.DHCPv6
 	for attempt := 0; attempt < attempts; attempt++ {
 		log.Printf("Attempt %d of %d", attempt+1, attempts)
-		conv, err = c.Exchange(ifname)
+		conv, err = c.Exchange(ifname, dhcpv6.WithNetboot)
 		if err != nil && attempt < attempts {
 			log.Printf("Error: %v", err)
 			continue
@@ -67,7 +70,7 @@ func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 	if attempts < 1 {
 		attempts = 1
 	}
-	client := dhcpv4.NewClient()
+	client := client4.NewClient()
 	var (
 		conv []*dhcpv4.DHCPv4
 		err  error
@@ -102,9 +105,11 @@ func main() {
 		netconf *netboot.NetConf
 	)
 	// bring interface up
-	_, err = netboot.IfUp(*ifname, 5*time.Second)
-	if err != nil {
-		log.Fatal(err)
+	if !*noIfup {
+		_, err = netboot.IfUp(*ifname, 5*time.Second)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	if *ver == 6 {
 		netconf, err = dhclient6(*ifname, *retries+1, *debug)

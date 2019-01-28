@@ -12,7 +12,9 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/insomniacslk/dhcp/dhcpv4"
+	"github.com/insomniacslk/dhcp/dhcpv4/client4"
 	"github.com/insomniacslk/dhcp/dhcpv6"
+	"github.com/insomniacslk/dhcp/dhcpv6/client6"
 )
 
 var ver = flag.Int("v", 6, "IP version to use")
@@ -27,7 +29,7 @@ var unpack = flag.Bool("unpack", false, "Unpack inner DHCPv6 messages when parsi
 var to = flag.String("to", "", "Destination to send packets to. If empty, will use [ff02::1:2]:547")
 
 func Clientv4() {
-	client := dhcpv4.NewClient()
+	client := client4.NewClient()
 	conv, err := client.Exchange(*iface)
 	// don't exit immediately if there's an error, since `conv` will always
 	// contain at least the SOLICIT message. So print it out first
@@ -54,7 +56,7 @@ func Clientv6() {
 	}
 	if *to == "" {
 		raddr = net.UDPAddr{
-			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
+			IP:   client6.AllDHCPRelayAgentsAndServers,
 			Port: dhcpv6.DefaultServerPort,
 			Zone: *iface,
 		}
@@ -73,7 +75,7 @@ func Clientv6() {
 			Zone: *iface, // this may clash with the scope passed in the dstHost, if any
 		}
 	}
-	c := dhcpv6.NewClient()
+	c := client6.NewClient()
 	c.LocalAddr = &laddr
 	c.RemoteAddr = &raddr
 	conv, err := c.Exchange(*iface)
