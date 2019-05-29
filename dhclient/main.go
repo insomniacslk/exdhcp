@@ -36,7 +36,7 @@ func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		Zone: ifname,
 	}
 	raddr := net.UDPAddr{
-		IP:   client6.AllDHCPRelayAgentsAndServers,
+		IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
 		Port: dhcpv6.DefaultServerPort,
 		Zone: ifname,
 	}
