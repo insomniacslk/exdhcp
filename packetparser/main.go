@@ -56,7 +56,7 @@ func Clientv6() {
 	}
 	if *to == "" {
 		raddr = net.UDPAddr{
-			IP:   client6.AllDHCPRelayAgentsAndServers,
+			IP:   dhcpv6.AllDHCPRelayAgentsAndServers,
 			Port: dhcpv6.DefaultServerPort,
 			Zone: *iface,
 		}
@@ -177,7 +177,7 @@ func main() {
 					packet = d
 					if *unpack {
 						if d.IsRelay() {
-							inner, err := d.(*dhcpv6.DHCPv6Relay).GetInnerMessage()
+							inner, err := d.(*dhcpv6.RelayMessage).GetInnerMessage()
 							if err != nil {
 								log.Fatal(err)
 							}
