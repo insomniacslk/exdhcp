@@ -22,7 +22,7 @@ var (
 	noIfup  = flag.Bool("noifup", false, "If set, don't wait for the interface to be up")
 )
 
-func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, error) {
+func dhclient6(ifname string, attempts int, verbose bool) (*netboot.BootConf, error) {
 	if attempts < 1 {
 		attempts = 1
 	}
@@ -62,11 +62,11 @@ func dhclient6(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		return nil, err
 	}
 	// extract the network configuration
-	netconf, _, err := netboot.ConversationToNetconf(conv)
+	netconf, err := netboot.ConversationToNetconf(conv)
 	return netconf, err
 }
 
-func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, error) {
+func dhclient4(ifname string, attempts int, verbose bool) (*netboot.BootConf, error) {
 	if attempts < 1 {
 		attempts = 1
 	}
@@ -93,7 +93,7 @@ func dhclient4(ifname string, attempts int, verbose bool) (*netboot.NetConf, err
 		return nil, err
 	}
 	// extract the network configuration
-	netconf, _, err := netboot.ConversationToNetconfv4(conv)
+	netconf, err := netboot.ConversationToNetconfv4(conv)
 	return netconf, err
 }
 
@@ -101,28 +101,32 @@ func main() {
 	flag.Parse()
 
 	var (
-		err     error
-		netconf *netboot.NetConf
+		err      error
+		bootconf *netboot.BootConf
 	)
 	// bring interface up
 	if !*noIfup {
 		_, err = netboot.IfUp(*ifname, 5*time.Second)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to bring interface %s up: %v", *ifname, err)
 		}
 	}
 	if *ver == 6 {
-		netconf, err = dhclient6(*ifname, *retries+1, *debug)
+		bootconf, err = dhclient6(*ifname, *retries+1, *debug)
 	} else {
-		netconf, err = dhclient4(*ifname, *retries+1, *debug)
+		bootconf, err = dhclient4(*ifname, *retries+1, *debug)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
 	// configure the interface
 	log.Printf("Setting network configuration:")
-	log.Printf("%+v", netconf)
-	if err := netboot.ConfigureInterface(*ifname, netconf); err != nil {
-		log.Fatal(err)
+	log.Printf("%+v", bootconf)
+	if *dryrun {
+		log.Printf("dry run requested, not changing network configuration")
+	} else {
+		if err := netboot.ConfigureInterface(*ifname, &bootconf.NetConf); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
